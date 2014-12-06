@@ -1,0 +1,35 @@
+/*
+ * Stylesheet for Game (surroundings really)
+ */
+
+*, *:before, *:after {
+    box-sizing: border-box;
+}
+
+html, body, main {
+    height: 100%;
+}
+
+html {
+    font: 1em "Helvetica Neue", Helvetica, Arial, sans-serif;
+    text-rendering: optimizeLegibility;
+    color: #303b3e;
+    font-weight: 400;
+    font-variant: normal;
+    overflow-y: scroll;
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+}
+
+main {
+    padding: 2em;
+    background-color: #3D6482;
+}
+
+#gameboard {
+    height: 100%;
+    background-color: #ffffff;
+}
