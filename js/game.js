@@ -2,7 +2,7 @@
  * Main game script
  */
 
-(function (Phaser, window) {
+var LD31 = (function (Phaser, LD31) {
 
     /*
      * Color from https://app.radius.com
@@ -25,62 +25,90 @@
      * subtle:         #FAFAFA;
      */
 
-    var corners = [new Phaser.Point(0, 0), new Phaser.Point(0, 1), new Phaser.Point(1, 0), new Phaser.Point(1, 1)];
+    var ENTITIES = ['blue', 'green', 'orange', 'red'];
 
-    var game = new Phaser.Game('100%', '100%', Phaser.AUTO, 'gameboard', {preload: preload, create: create, update: update}, true);
-    var businesses = {};
+    function Game (game) {}
 
-    window.biz = {
-        corners: corners,
-        game: game,
-        businesses: businesses
+    Game.prototype = {
+        preload: function () {
+            ENTITIES.forEach(function (prefix) {
+                game.load.image(prefix + '-corner', 'assets/'+ prefix + '-corner.png');
+
+                game.load.image(prefix + '-1x1', 'assets/' + prefix + '-1x1.png');
+                game.load.image(prefix + '-1x1R', 'assets/' + prefix + '-1x1-rounded.png');
+                game.load.image(prefix + '-1x2', 'assets/' + prefix + '-1x2.png');
+                game.load.image(prefix + '-1x3', 'assets/' + prefix + '-1x3.png');
+                game.load.image(prefix + '-2x1', 'assets/' + prefix + '-2x1.png');
+                game.load.image(prefix + '-3x1', 'assets/' + prefix + '-3x1.png');
+                game.load.image(prefix + '-4x1', 'assets/' + prefix + '-4x1.png');
+            });
+        },
+        create: function () {
+            // Reponsive and centered canvas
+            this.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
+
+            this.world.setBounds(0, 0, this.game.width * 10, this.game.height * 10);
+
+            // Set internal state object
+            var self = this;
+            this.__ = {};
+
+            this.__.conglomerates = this.game.add.group();
+            ENTITIES.forEach(function (prefix, index) {
+                self.__.conglomerates.add(new LD31.Conglomerate(self.game, prefix, index));
+            });
+
+            this.__.zoomKey = this.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+            this.__.zoomKey.onDown.add(this.zoomWorld, this);
+
+            this.__.touchArea = this.game.add.sprite(0, 0);
+            this.__.touchArea.width = this.world.width;
+            this.__.touchArea.height = this.world.height;
+            this.__.touchArea.inputEnabled  = true;
+            this.__.touchArea.events.onInputDown.add(this.zoomWorld, this);
+
+            this.__.score = this.game.add.group();
+            this.__.conglomerates.children.forEach(function (conglomerate) {
+                console.log(conglomerate);
+                self.__.score.add(conglomerate.createScore());
+            });
+
+            this.__.conglomerates.scale.set(0.1, 0.1);
+            this.__.zoomed = false;
+        },
+        update: function () {
+
+        },
+        render: function () {
+            this.game.debug.cameraInfo(this.camera, 32, 32);
+        },
+
+        zoomWorld: function () {
+            var scale = this.__.conglomerates.scale.x;
+            var x = this.input.worldX / scale;
+            var y = this.input.worldY / scale;
+
+            if (this.__.zoomed) {
+                this.__.conglomerates.scale.set(0.1, 0.1);
+                this.camera.focusOnXY(0, 0);
+                this.__.score.visible = true;
+            } else {
+                this.__.score.visible = false;
+                this.__.conglomerates.scale.set(1, 1);
+                this.camera.focusOnXY(x, y);
+            }
+
+            this.__.zoomed = !this.__.zoomed;
+        }
     };
 
-    function preload () {
-        game.load.image('blue-corner', 'assets/blue-corner.png');
-        game.load.image('green-corner', 'assets/green-corner.png');
-        game.load.image('orange-corner', 'assets/orange-corner.png');
-        game.load.image('red-corner', 'assets/red-corner.png');
-    }
+    var game = new Phaser.Game('100%', '100%', Phaser.AUTO, 'gameboard', null, true);
+    game.state.add('game', Game);
+    game.state.start('game');
 
-    function create () {
-        businesses.blue = new Business(0, 'blue', game);
-        businesses.green = new Business(1, 'green', game);
-        businesses.orange = new Business(2, 'orange', game);
-        businesses.red = new Business(3, 'red', game);
-    }
+    // Debug structure
+    LD31._biz = game;
 
-    function update () {
+    return LD31;
 
-    }
-
-    // ==================================================
-
-    function Business (index, name, game) {
-        this.__ = {
-            name: name,
-            score: this._initScoreCorner(name, corners[index], game),
-            businesses: this._initBusinesses(name, game)
-        };
-    }
-
-    Business.prototype._initScoreCorner = function (prefix, corner, game) {
-        var group = game.add.group();
-        group.enableBody = true;
-
-        var scoreContainer = group.create(corner.x * game.width, corner.y * game.height, prefix + '-corner');
-        scoreContainer.body.immovable = true;
-        scoreContainer.x -= scoreContainer.width / 2;
-        scoreContainer.y -= scoreContainer.height / 2;
-
-        return group;
-    };
-
-    Business.prototype._initBusinesses = function (prefix, game) {
-        var group = game.add.group();
-        group.enableBody = true;
-
-        return group;
-    };
-
-})(Phaser, window);
+})(Phaser, LD31 || {});
