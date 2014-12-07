@@ -49,32 +49,36 @@ var LD31 = (function (Phaser, LD31) {
 
             this.world.setBounds(0, 0, this.game.width * 10, this.game.height * 10);
 
+            // Enable arcade physics
+            this.game.physics.startSystem(Phaser.Physics.ARCADE);
+
             // Set internal state object
             var self = this;
             this.__ = {};
 
-            this.__.conglomerates = this.game.add.group();
+            this._conglomerates = this.game.add.group();
             ENTITIES.forEach(function (prefix, index) {
-                self.__.conglomerates.add(new LD31.Conglomerate(self.game, prefix, index));
+                self._conglomerates.add(new LD31.Conglomerate(self.game, prefix, index));
             });
 
-            this.__.zoomKey = this.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-            this.__.zoomKey.onDown.add(this.zoomWorld, this);
+            this._zoomKey = this.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+            this._zoomKey.onDown.add(this.zoomWorld, this);
 
-            this.__.touchArea = this.game.add.sprite(0, 0);
-            this.__.touchArea.width = this.world.width;
-            this.__.touchArea.height = this.world.height;
-            this.__.touchArea.inputEnabled  = true;
-            this.__.touchArea.events.onInputDown.add(this.zoomWorld, this);
-
-            this.__.score = this.game.add.group();
-            this.__.conglomerates.children.forEach(function (conglomerate) {
-                console.log(conglomerate);
-                self.__.score.add(conglomerate.createScore());
+            this._score = this.game.add.group();
+            this._conglomerates.children.forEach(function (conglomerate) {
+                self._score.add(conglomerate.createScore());
             });
 
-            this.__.conglomerates.scale.set(0.1, 0.1);
-            this.__.zoomed = false;
+            this._conglomerates.scale.set(0.1, 0.1);
+            this._zoomed = false;
+
+            // Keep as overlay
+            this._overlay = this.game.add.sprite(0, 0);
+            this._overlay.width = this.world.width;
+            this._overlay.height = this.world.height;
+            this._overlay.inputEnabled  = true;
+            this._overlay.events.onInputDown.add(this.zoomWorld, this);
+
         },
         update: function () {
 
@@ -84,21 +88,21 @@ var LD31 = (function (Phaser, LD31) {
         },
 
         zoomWorld: function () {
-            var scale = this.__.conglomerates.scale.x;
+            var scale = this._conglomerates.scale.x;
             var x = this.input.worldX / scale;
             var y = this.input.worldY / scale;
 
-            if (this.__.zoomed) {
-                this.__.conglomerates.scale.set(0.1, 0.1);
+            if (this._zoomed) {
+                this._conglomerates.scale.set(0.1, 0.1);
                 this.camera.focusOnXY(0, 0);
-                this.__.score.visible = true;
+                this._score.visible = true;
             } else {
-                this.__.score.visible = false;
-                this.__.conglomerates.scale.set(1, 1);
+                this._score.visible = false;
+                this._conglomerates.scale.set(1, 1);
                 this.camera.focusOnXY(x, y);
             }
 
-            this.__.zoomed = !this.__.zoomed;
+            this._zoomed = !this._zoomed;
         }
     };
 

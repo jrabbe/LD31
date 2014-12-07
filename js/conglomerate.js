@@ -8,76 +8,61 @@ var LD31 = (function (Phaser, LD31) {
     var INITIAL_MARKET_CAP = 100;
     var MAX_INITIAL_BIZ_SIZE = 5;
     var CORNERS = [new Phaser.Point(0, 0), new Phaser.Point(0, 1), new Phaser.Point(1, 0), new Phaser.Point(1, 1)];
-    var BLOCKS = ['1x1', '1x2', '1x3', '2x1', '3x1', '4x1'];
 
-    function Conglomerate (game, name, index) {
-        this.__ = {
-            name: name,
-            game: game,
-            index: index
-        };
+    function Conglomerate (game, prefix, index, parent) {
+        Phaser.Group.call(this, game, parent);
 
-        this._initConglomerates(name, game);
-
-        return this.__.businesses;
+        this._prefix = prefix;
+        this._index = index;
+        this._marketCap = INITIAL_MARKET_CAP;
+        this._init();
     }
 
-    Conglomerate.prototype._initConglomerates = function (prefix, game) {
-        var group = game.add.group();
-        group.enableBody = true;
+    Conglomerate.prototype = Object.create(Phaser.Group.prototype);
+    Conglomerate.constructor = Conglomerate;
 
-        var marketCap = this.__.marketCap = INITIAL_MARKET_CAP;
+    Conglomerate.prototype._init = function () {
+        this.enableBody = true;
+
+        var marketCap = this._marketCap = INITIAL_MARKET_CAP;
         while (marketCap > 0) {
-            var bizSize = game.rnd.between(1, Math.min(marketCap, MAX_INITIAL_BIZ_SIZE));
+            var bizSize = this.game.rnd.between(1, Math.min(marketCap, MAX_INITIAL_BIZ_SIZE));
             marketCap -= bizSize;
 
-            var biz = new Phaser.Group(game, group);
-            biz.enableBody = true;
-            biz.x = game.world.randomX;
-            biz.y = game.world.randomY;
-
-
-            biz.create(0, 0, prefix + '-' + BLOCKS[game.rnd.between(0, BLOCKS.length - 1)]);
+            this.add(new LD31.Business(this.game, bizSize, this._prefix));
         }
 
-        group.createScore = this.createScoreFunction();
-
-        this.__.businesses = group;
     };
 
     Conglomerate.prototype.setScore = function (score) {
-        this.__.setScore(score);
+        this._setScore(score);
     };
 
-    Conglomerate.prototype.createScoreFunction = function () {
-        var __ = this.__;
-        return function () {
-            var group = __.game.add.group();
-            group.enableBody = true;
+    Conglomerate.prototype.createScore = function () {
+        var group = this.game.add.group();
+        group.enableBody = true;
 
-            var corner = CORNERS[__.index];
-            var scoreContainer = group.create(corner.x * __.game.width - SCORE_CORNER_SIZE,
-                corner.y * __.game.height - SCORE_CORNER_SIZE, __.name + '-corner');
-            scoreContainer.body.immovable = true;
+        var corner = CORNERS[this._index];
+        var scoreContainer = group.create(corner.x * this.game.width - SCORE_CORNER_SIZE,
+            corner.y * this.game.height - SCORE_CORNER_SIZE, this._prefix + '-corner');
+        scoreContainer.body.immovable = true;
 
-            var scoreText = new Phaser.Text(__.game,
-                corner.x * (__.game.width - SCORE_CORNER_SIZE / 2) - (corner.x - 1) * 4,
-                corner.y * (__.game.height - SCORE_CORNER_SIZE / 2 - 8),
-                '0', // initialize to zero
-                {font: '16pt Helvetica Neue', fill: '#303B3E', align: 'center'});
-            group.add(scoreText);
+        var scoreText = new Phaser.Text(this.game,
+            corner.x * (this.game.width - SCORE_CORNER_SIZE / 2) - (corner.x - 1) * 4,
+            corner.y * (this.game.height - SCORE_CORNER_SIZE / 2 - 8),
+            '0', // initialize to zero
+            {font: '16pt Helvetica Neue', fill: '#303B3E', align: 'center'});
+        group.add(scoreText);
 
-            __.score = group;
-            __.setScore = function (score) {
-                scoreText.text = score;
-            };
-
-            return group;
+        this._score = group;
+        this._setScore = function (score) {
+            scoreText.text = score;
         };
+
+        return group;
     };
 
     LD31.Conglomerate = Conglomerate;
-
     return LD31;
 
 })(Phaser, LD31 || {});
