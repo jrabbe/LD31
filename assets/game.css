@@ -27,9 +27,11 @@ body {
 main {
     padding: 2em;
     background-color: #3D6482;
+    text-align: center;
 }
 
 #gameboard {
     height: 100%;
     background-color: #FFFFFF;
+    margin: 0 auto;
 }

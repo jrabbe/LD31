@@ -1,141 +1,34 @@
-/**
- * Main game script
- */
 
-var LD31 = (function (Phaser, LD31) {
+var LD31 = (function (window, document, paper, LD31) {
 
-    /*
-     * Color from https://app.radius.com
-     *
-     * base:           #303B3E;
-     * white:          #ffffff;
-     *
-     * new:            #86c1f4;
-     * open:           #f4ba6f;
-     * won:            #7fcb9f;
-     * lost:           #ea6d64;
-     *
-     * radius:         #4a789c;
-     * radius-dark:    #3D6482
-     * radius-light:   #F1F6FC;
-     * radius-purple:  #bf8dd6;
-     *
-     * demure:         #E1DFE0;
-     * subtext:        #999e9f;
-     * subtle:         #FAFAFA;
-     */
+    LD31._biz = {};
 
-    var ENTITIES = ['blue', 'green', 'orange', 'red'];
+    window.onload = function () {
+        var canvas = document.getElementById('gameboard');
+        paper.setup(canvas);
 
-    function Game (game) {}
+        LD31._biz.conglomarates = [];
+        LD31.world = {
+            width: paper.view.size.width * LD31.settings.zoomFactor,
+            height: paper.view.size.height * LD31.settings.zoomFactor
+        };
 
-    Game.prototype = {
-        preload: function () {
-            this.time.advancedTiming = true;
+        var background = new LD31.Background();
 
-            ENTITIES.forEach(function (prefix) {
-                game.load.image(prefix + '-corner', 'assets/'+ prefix + '-corner.png');
-
-                game.load.image(prefix + '-1x1', 'assets/' + prefix + '-1x1.png');
-                game.load.image(prefix + '-1x1R', 'assets/' + prefix + '-1x1-rounded.png');
-                game.load.image(prefix + '-1x2', 'assets/' + prefix + '-1x2.png');
-                game.load.image(prefix + '-1x3', 'assets/' + prefix + '-1x3.png');
-                game.load.image(prefix + '-2x1', 'assets/' + prefix + '-2x1.png');
-                game.load.image(prefix + '-3x1', 'assets/' + prefix + '-3x1.png');
-                game.load.image(prefix + '-4x1', 'assets/' + prefix + '-4x1.png');
-            });
-        },
-        create: function () {
-            // Reponsive and centered canvas
-            this.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
-
-            this.world.setBounds(0, 0, this.game.width * 10, this.game.height * 10);
-
-            // Enable arcade physics
-            this.physics.startSystem(Phaser.Physics.ARCADE);
-
-            // Set internal state object
-            var self = this;
-
-            this._conglomerates = this.game.add.group();
-            ENTITIES.forEach(function (prefix, index) {
-                var c = new LD31.Conglomerate(self.game, prefix, index);
-                self._conglomerates.add(c);
-            });
-
-            this._score = this.game.add.group();
-            this._conglomerates.children.forEach(function (conglomerate) {
-                self._score.add(conglomerate.createScore());
-            });
-
-            this._conglomerates.scale.set(0.1, 0.1);
-            this._zoomed = false;
-
-            this._zoomKey = this.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-            this._zoomKey.onDown.add(this.zoomWorld, this);
-
-            // Keep as overlay
-            this._overlay = this.game.add.sprite(0, 0);
-            this._overlay.width = this.world.width;
-            this._overlay.height = this.world.height;
-            this._overlay.inputEnabled  = true;
-            this._overlay.events.onInputDown.add(this.zoomWorld, this);
-
-        },
-        update: function () {
-            var self = this;
-            this._conglomerates.children.reduce(function (accumulator, value) {
-                accumulator.forEach(function (a) {
-                    self.physics.arcade.overlap(a, value, function (a, b) {
-                        if (a.alive && b.alive) {
-                            // calculate difference in health
-                            var diff = (a.health + b.health) / 2;
-                            // var ah = diff / a.health;
-                            // var bh = diff / b.health;
-                            if (a.health > b.health) {
-                                b.ouch(diff);
-                            } else if (b.health > a.health) {
-                                a.ouch(diff);
-                            }
-                        }
-                    });
-                });
-
-                accumulator.push(value);
-                return accumulator;
-            }, []);
-        },
-        render: function () {
-            this.game.debug.text(this.time.fps || '--', 32, 32, '#bf8dd6');
-            // this.game.debug.cameraInfo(this.camera, 32, 32);
-        },
-
-        zoomWorld: function () {
-            var scale = this._conglomerates.scale.x;
-            var x = this.input.worldX / scale;
-            var y = this.input.worldY / scale;
-
-            if (this._zoomed) {
-                this._conglomerates.scale.set(0.1, 0.1);
-                this.camera.focusOnXY(0, 0);
-                this._score.visible = true;
-            } else {
-                this._score.visible = false;
-                this._conglomerates.scale.set(1, 1);
-                this.camera.focusOnXY(x, y);
-            }
-
-            this._zoomed = !this._zoomed;
+        LD31._biz.scores = new paper.Group();
+        for (var i = 0; i < LD31.settings.players; i++) {
+            var conglomerate = new LD31.Conglomerate(i, LD31.settings.startingMarketCap);
+            LD31._biz.conglomarates.push(conglomerate);
+            LD31._biz.scores.addChild(conglomerate.createScore());
         }
+
+        paper.view.zoom = 0.1;
+        paper.view.center = [LD31.world.width / 2, LD31.world.height / 2];
+        paper.view.draw();
+
+        console.log(paper.view.bounds);
     };
-
-    var game = new Phaser.Game('100%', '100%', Phaser.AUTO, 'gameboard', null, true);
-    game.state.add('game', Game);
-    game.state.start('game');
-
-    // Debug structure
-    LD31._biz = game;
 
     return LD31;
 
-})(Phaser, LD31 || {});
+})(window, document, paper, LD31 || {});
