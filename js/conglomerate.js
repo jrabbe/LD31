@@ -5,8 +5,9 @@
 var LD31 = (function (Phaser, LD31) {
 
     var SCORE_CORNER_SIZE = 32;
-    var INITIAL_MARKET_CAP = 100;
-    var MAX_INITIAL_BIZ_SIZE = 5;
+    var INITIAL_MARKET_CAP = 20;
+    var MIN_INITIAL_BIZ_SIZE = 5;
+    var MAX_INITIAL_BIZ_SIZE = 10;
     var CORNERS = [new Phaser.Point(0, 0), new Phaser.Point(0, 1), new Phaser.Point(1, 0), new Phaser.Point(1, 1)];
 
     function Conglomerate (game, prefix, index, parent) {
@@ -26,16 +27,29 @@ var LD31 = (function (Phaser, LD31) {
 
         var marketCap = this._marketCap = INITIAL_MARKET_CAP;
         while (marketCap > 0) {
-            var bizSize = this.game.rnd.between(1, Math.min(marketCap, MAX_INITIAL_BIZ_SIZE));
+            var bizSize = this.game.rnd.between(MIN_INITIAL_BIZ_SIZE, Math.min(marketCap, MAX_INITIAL_BIZ_SIZE));
             marketCap -= bizSize;
 
-            this.add(new LD31.Business(this.game, bizSize, this._prefix));
+            this.add(new LD31.Business(this.game, bizSize, this._prefix, this));
         }
-
     };
 
     Conglomerate.prototype.setScore = function (score) {
         this._setScore(score);
+    };
+
+    Conglomerate.prototype.updateMarketCap = function () {
+
+        var m = this.children.reduce(function (acc, child) {
+            if (child.alive) {
+                acc += child.health;
+            }
+
+            return acc;
+        }, 0);
+
+        this._marketCap = Math.round(m);
+        this._setScore(this._marketCap);
     };
 
     Conglomerate.prototype.createScore = function () {
@@ -47,11 +61,12 @@ var LD31 = (function (Phaser, LD31) {
             corner.y * this.game.height - SCORE_CORNER_SIZE, this._prefix + '-corner');
         scoreContainer.body.immovable = true;
 
+        var alignment = !corner.x ? 'left' : 'right';
         var scoreText = new Phaser.Text(this.game,
             corner.x * (this.game.width - SCORE_CORNER_SIZE / 2) - (corner.x - 1) * 4,
             corner.y * (this.game.height - SCORE_CORNER_SIZE / 2 - 8),
             '0', // initialize to zero
-            {font: '16pt Helvetica Neue', fill: '#303B3E', align: 'center'});
+            {font: '11pt Helvetica Neue', fill: '#303B3E', align: alignment});
         group.add(scoreText);
 
         this._score = group;

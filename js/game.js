@@ -31,6 +31,8 @@ var LD31 = (function (Phaser, LD31) {
 
     Game.prototype = {
         preload: function () {
+            this.time.advancedTiming = true;
+
             ENTITIES.forEach(function (prefix) {
                 game.load.image(prefix + '-corner', 'assets/'+ prefix + '-corner.png');
 
@@ -50,19 +52,16 @@ var LD31 = (function (Phaser, LD31) {
             this.world.setBounds(0, 0, this.game.width * 10, this.game.height * 10);
 
             // Enable arcade physics
-            this.game.physics.startSystem(Phaser.Physics.ARCADE);
+            this.physics.startSystem(Phaser.Physics.ARCADE);
 
             // Set internal state object
             var self = this;
-            this.__ = {};
 
             this._conglomerates = this.game.add.group();
             ENTITIES.forEach(function (prefix, index) {
-                self._conglomerates.add(new LD31.Conglomerate(self.game, prefix, index));
+                var c = new LD31.Conglomerate(self.game, prefix, index);
+                self._conglomerates.add(c);
             });
-
-            this._zoomKey = this.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-            this._zoomKey.onDown.add(this.zoomWorld, this);
 
             this._score = this.game.add.group();
             this._conglomerates.children.forEach(function (conglomerate) {
@@ -71,6 +70,9 @@ var LD31 = (function (Phaser, LD31) {
 
             this._conglomerates.scale.set(0.1, 0.1);
             this._zoomed = false;
+
+            this._zoomKey = this.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+            this._zoomKey.onDown.add(this.zoomWorld, this);
 
             // Keep as overlay
             this._overlay = this.game.add.sprite(0, 0);
@@ -81,10 +83,31 @@ var LD31 = (function (Phaser, LD31) {
 
         },
         update: function () {
+            var self = this;
+            this._conglomerates.children.reduce(function (accumulator, value) {
+                accumulator.forEach(function (a) {
+                    self.physics.arcade.overlap(a, value, function (a, b) {
+                        if (a.alive && b.alive) {
+                            // calculate difference in health
+                            var diff = (a.health + b.health) / 2;
+                            // var ah = diff / a.health;
+                            // var bh = diff / b.health;
+                            if (a.health > b.health) {
+                                b.ouch(diff);
+                            } else if (b.health > a.health) {
+                                a.ouch(diff);
+                            }
+                        }
+                    });
+                });
 
+                accumulator.push(value);
+                return accumulator;
+            }, []);
         },
         render: function () {
-            this.game.debug.cameraInfo(this.camera, 32, 32);
+            this.game.debug.text(this.time.fps || '--', 32, 32, '#bf8dd6');
+            // this.game.debug.cameraInfo(this.camera, 32, 32);
         },
 
         zoomWorld: function () {
