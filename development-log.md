@@ -1,6 +1,18 @@
 Development Log
 ===============
 
+12/07 = 12:20 pm
+----------------
+
+Have new steam, fully moved to using paper.js and ditched Phaser.
+
+12/06 = 11:58 pm
+----------------
+
+Insanity strikes (again). Game is more an action puzzle game than a regular "control an avatar" type game, and it means the investigated game engines are not as suitable as originally thought. It is especially the understanding of multi-entity collision detection which seems like it's out of my grasp for this challenge.
+
+The only logical choice then is to ditch the engines and create the game using Paper.js, a "library" not intended for games as such, but for interactive visualizations on `<canvas>` elements.
+
 12/06 = 11:26 am
 ----------------
 

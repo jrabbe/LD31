@@ -1,83 +1,66 @@
-/*
- * Conglomerate class
- */
 
-var LD31 = (function (Phaser, LD31) {
+var LD31 = (function (paper, LD31) {
 
-    var SCORE_CORNER_SIZE = 32;
-    var INITIAL_MARKET_CAP = 20;
-    var MIN_INITIAL_BIZ_SIZE = 5;
-    var MAX_INITIAL_BIZ_SIZE = 10;
-    var CORNERS = [new Phaser.Point(0, 0), new Phaser.Point(0, 1), new Phaser.Point(1, 0), new Phaser.Point(1, 1)];
-
-    function Conglomerate (game, prefix, index, parent) {
-        Phaser.Group.call(this, game, parent);
-
-        this._prefix = prefix;
+    function Conglomerate (index, marketCap) {
         this._index = index;
-        this._marketCap = INITIAL_MARKET_CAP;
-        this._init();
+        this._marketCap = marketCap;
+
+        this._businesses = new paper.Group();
+        var m = marketCap;
+        while (m > 0) {
+
+            var size = LD31.utils.between(LD31.settings.minStartSize, Math.min(LD31.settings.maxStartSize, m));
+            var biz = new LD31.Business(index, size, this);
+            this._businesses.addChild(biz.getPath());
+
+            m -= size;
+        }
+
+        this._businesses.__ = this;
+        this._businesses.type = 'Conglomerate';
     }
 
-    Conglomerate.prototype = Object.create(Phaser.Group.prototype);
-    Conglomerate.constructor = Conglomerate;
-
-    Conglomerate.prototype._init = function () {
-        this.enableBody = true;
-
-        var marketCap = this._marketCap = INITIAL_MARKET_CAP;
-        while (marketCap > 0) {
-            var bizSize = this.game.rnd.between(MIN_INITIAL_BIZ_SIZE, Math.min(marketCap, MAX_INITIAL_BIZ_SIZE));
-            marketCap -= bizSize;
-
-            this.add(new LD31.Business(this.game, bizSize, this._prefix, this));
-        }
-    };
-
-    Conglomerate.prototype.setScore = function (score) {
-        this._setScore(score);
-    };
-
-    Conglomerate.prototype.updateMarketCap = function () {
-
-        var m = this.children.reduce(function (acc, child) {
-            if (child.alive) {
-                acc += child.health;
-            }
-
-            return acc;
-        }, 0);
-
-        this._marketCap = Math.round(m);
-        this._setScore(this._marketCap);
+    Conglomerate.prototype.getGroup = function () {
+        return this._businesses;
     };
 
     Conglomerate.prototype.createScore = function () {
-        var group = this.game.add.group();
-        group.enableBody = true;
 
-        var corner = CORNERS[this._index];
-        var scoreContainer = group.create(corner.x * this.game.width - SCORE_CORNER_SIZE,
-            corner.y * this.game.height - SCORE_CORNER_SIZE, this._prefix + '-corner');
-        scoreContainer.body.immovable = true;
+        var zoom = LD31.settings.zoomFactor;
+        var xsign = LD31.utils.negativity(LD31.settings.corners[this._index][0]);
+        var ysign = LD31.utils.negativity(LD31.settings.corners[this._index][1]);
+        var startx = LD31.world.width * LD31.settings.corners[this._index][0];
+        var starty = LD31.world.height * LD31.settings.corners[this._index][1];
+        var endy = starty - ysign * LD31.settings.scoreBaseHeight * zoom;
 
-        var alignment = !corner.x ? 'left' : 'right';
-        var scoreText = new Phaser.Text(this.game,
-            corner.x * (this.game.width - SCORE_CORNER_SIZE / 2) - (corner.x - 1) * 4,
-            corner.y * (this.game.height - SCORE_CORNER_SIZE / 2 - 8),
-            '0', // initialize to zero
-            {font: '11pt Helvetica Neue', fill: '#303B3E', align: alignment});
-        group.add(scoreText);
+        var background = new paper.Path();
+        background.add([startx, starty]);
+        background.add([startx - xsign * LD31.settings.scoreBaseWidth * zoom, starty]);
+        background.add([startx - xsign * (LD31.settings.scoreBaseWidth - 5) * zoom, endy]);
+        background.add([startx, endy]);
+        background.closed = true;
+        background.fillColor = LD31.settings.colors[this._index];
 
-        this._score = group;
-        this._setScore = function (score) {
-            scoreText.text = score;
-        };
+        this.score = new paper.PointText({
+            point: [startx - xsign * 4.8 * zoom, starty - ysign * 4.8 * zoom + 3.2 * zoom],
+            content: this._marketCap,
+            fillColor: LD31.settings.baseColor,
+            fontSize: 7.2 * zoom,
+            justification: xsign > 0 ? 'right' : 'left'
+        });
 
+        var group = new paper.Group();
+        group.addChild(background);
+        group.addChild(this.score);
         return group;
+    };
+
+    Conglomerate.prototype.updateScore = function (delta) {
+        this._marketCap += delta;
+        this.score.content = Math.round(this._marketCap);
     };
 
     LD31.Conglomerate = Conglomerate;
     return LD31;
 
-})(Phaser, LD31 || {});
+})(paper, LD31 || {});

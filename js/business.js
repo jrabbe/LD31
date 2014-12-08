@@ -1,65 +1,97 @@
-/*
- * Business class
- */
 
-var LD31 = (function (Phaser, LD31) {
+var LD31 = (function (paper, LD31) {
 
-    var BLOCKS = ['1x1', '1x2', '1x3', '2x1', '3x1', '4x1'];
-    var MAX_VELOCITY = 5000;
+    function Business (index, size, parent) {
+        this._index = index;
+        this._size = size;
+        this._parent = parent;
+        this.active = true;
 
-    function Business(game, size, prefix, conglomerate) {
-        Phaser.Sprite.call(this, game, game.world.randomX, game.world.randomY, prefix + '-' + BLOCKS[0]);
+        var realSize = size * LD31.settings.baseSize;
+        this.behavior = new LD31.Behavior(this);
+        this._business = new paper.Path.Rectangle({
+            point: [LD31.world.randomX(realSize), LD31.world.randomY(realSize)],
+            size: [LD31.settings.baseSize, LD31.settings.baseSize],
+            strokeColor: LD31.settings.colors[index],
+            strokeWidth: LD31.settings.lineWidth,
+            fillColor: LD31.settings.fillColor
+        });
+        this._business.scale(size);
 
-        this.maxVelocity = MAX_VELOCITY;
-        this.health = size;
-        this._prefix = prefix;
-        this._conglomerate = conglomerate;
-        this._init();
+        this._action = new paper.PointText({
+            point: this.getCenter().add([-realSize / 2, realSize / 2]),
+            content: this.behavior.getAction(),
+            fillColor: LD31.settings.baseColor,
+            fontSize: realSize
+        });
+
+        this._business.__ = this;
+        this._business.type = 'Business';
+        this._uid = LD31.utils.generateUid();
     }
 
-    Business.prototype = Object.create(Phaser.Sprite.prototype);
-    Business.constructor = Business;
-
-    Business.prototype._init = function () {
-        this.game.physics.arcade.enable(this);
-        this.scale.set(this.health);
+    Business.prototype.getPath = function () {
+        return this._business;
     };
 
-    Business.prototype.ouch = function (damage) {
-        this.damage(damage);
-        this.scale.set(this.health);
-        this._conglomerate.updateMarketCap();
+    Business.prototype.getBusinessesWithin = function (distance) {
+        var center = this.getCenter();
+        var bounds = new paper.Rectangle(center.x - distance, center.y - distance, distance * 2, distance * 2);
+
+        return LD31.game.getBusinessesWithin(bounds);
     };
 
-    Business.prototype.update = function () {
-        var self = this;
-        this._conglomerate.children.reduce(function (acc, child) {
-            acc.forEach(function (accChild) {
-                self.game.physics.arcade.overlap(child, accChild, function (a, b) {
-                    var h = -a.health;
-                    a.kill();
-                    b.ouch(h);
-                });
-            });
+    Business.prototype.getCenter = function () {
+        return this._business.bounds.center;
+    };
 
-            if (child.alive) {
-                acc.push(child);
-            }
+    Business.prototype.getBounds = function () {
+        return this._business.bounds;
+    };
 
-            return acc;
-        }, []);
+    Business.prototype.move = function (vector) {
+        this._business.translate(vector);
+        this._action.translate(vector);
+    };
 
-        var v = this.maxVelocity / this.health;
-        var vXCandidate = this.game.rnd.between(-v, v);
-        var vYCandidate = this.game.rnd.between(-v, v);
+    Business.prototype.resize = function (delta) {
+        var oldSize = this._size;
+        this._size += delta;
+        if (this._size < 0) {
+            this._size = 0;
+        }
 
-        var vX = LD31.utils.bounds(-v, this.body.velocity.x + vXCandidate, v);
-        var vY = LD31.utils.bounds(-v, this.body.velocity.y + vYCandidate, v);
+        var factor = this._size / oldSize;
 
-        this.body.velocity.set(vXCandidate, vYCandidate);
+        this._business.scale(factor);
+        this._action.fontSize = this._size * LD31.settings.baseSize;
+        this._parent.updateScore(this._size - oldSize);
+
+        if (this._size <= 0) {
+            this.remove();
+        }
+    };
+
+    Business.prototype.remove = function () {
+        this._business.remove();
+        this._action.remove();
+        this.active = false;
+    };
+
+    Business.prototype.getSize = function () {
+        return this._size;
+    };
+
+    Business.prototype.equals = function (other) {
+        return typeof other === typeof this && this._uid === other._uid;
+    };
+
+    Business.prototype.matches = function (other) {
+        // returns true if they are from the same conglomerate
+        return this._index === other._index;
     };
 
     LD31.Business = Business;
     return LD31;
 
-})(Phaser, LD31 || {});
+})(paper, LD31 || {});
