@@ -8,6 +8,14 @@ var LD31 = (function (paper, LD31) {
 
         negativity: function (value) {
             return value * 2 - 1;
+        },
+
+        bounds: function (min, value, max) {
+            return Math.max(min, Math.min(value, max));
+        },
+
+        generateUid: function () {
+            return Math.random().toString(36).slice(2);
         }
 
     };

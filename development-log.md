@@ -1,6 +1,11 @@
 Development Log
 ===============
 
+12/07 = 12:20 pm
+----------------
+
+Have new steam, fully moved to using paper.js and ditched Phaser.
+
 12/06 = 11:58 pm
 ----------------
 
